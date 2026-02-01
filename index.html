@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculatrice Windows</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body.hide-cursor,
+        body.hide-cursor * {
+            cursor: none !important;
+        }
+        
+        #content {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .calculator {
+            background: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            padding: 20px;
+            width: 320px;
+        }
+        
+        .calculator-header {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .calculator-title {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .window-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #28ca42; }
+        .close { background: #ff5f57; }
+        
+        .display {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: right;
+            font-size: 32px;
+            margin-bottom: 15px;
+            min-height: 60px;
+            color: #333;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .btn {
+            background: #e0e0e0;
+            border: none;
+            border-radius: 5px;
+            padding: 20px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #333;
+        }
+        
+        .btn:hover {
+            background: #d0d0d0;
+            transform: scale(1.05);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn.operator {
+            background: #ff9500;
+            color: white;
+        }
+        
+        .btn.operator:hover {
+            background: #e68600;
+        }
+        
+        .btn.clear {
+            background: #ff3b30;
+            color: white;
+        }
+        
+        .btn.clear:hover {
+            background: #e6342a;
+        }
+        
+        .btn.equals {
+            background: #34c759;
+            color: white;
+            grid-column: span 2;
+        }
+        
+        .btn.equals:hover {
+            background: #2eb34a;
+        }
+        
+        .btn.zero {
+            grid-column: span 2;
+        }
+        
+        #blueScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #0078d7;
+            z-index: 40;
+        }
+        
+        #blackScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 50;
+        }
+        
+        #finalBlackScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 200;
+        }
+        
+        #errorMessage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            text-align: left;
+            z-index: 100;
+            padding: 5vh 8vw;
+            width: 90%;
+            max-width: none;
+        }
+        
+        #errorMessage .sad-face {
+            font-size: 10vw;
+            margin-bottom: 2.5vh;
+            line-height: 1;
+        }
+        
+        #errorMessage .error-title {
+            font-size: 3.2vw;
+            margin-bottom: 3vh;
+            font-weight: 300;
+            line-height: 1.2;
+        }
+        
+        #errorMessage .error-text {
+            font-size: 1.8vw;
+            line-height: 1.6;
+            margin-bottom: 1.5vh;
+            font-weight: 300;
+        }
+        
+        #errorMessage .error-code {
+            font-size: 1.3vw;
+            margin-top: 6vh;
+            opacity: 0.9;
+            line-height: 1.8;
+        }
+        
+        #countdown {
+            display: none;
+            position: fixed;
+            top: 3vh;
+            left: 3vw;
+            color: #00ff00;
+            font-size: 1.6vw;
+            font-family: 'Courier New', monospace;
+            font-weight: normal;
+            text-align: left;
+            z-index: 100;
+            line-height: 1.6;
+            white-space: pre;
+        }
+        
+        .terminal-line {
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+        
+        .blink {
+            animation: blink 1s infinite;
+        }
+        
+        .countdown-number {
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 2.5vw;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes blink {
+            0%, 50% {
+                opacity: 1;
+            }
+            51%, 100% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <div class="calculator">
+            <div class="calculator-header">
+                <span class="calculator-title">🧮 Calculatrice</span>
+                <div class="window-controls">
+                    <div class="window-btn minimize"></div>
+                    <div class="window-btn maximize"></div>
+                    <div class="window-btn close"></div>
+                </div>
+            </div>
+            
+            <div class="display" id="display">0</div>
+            
+            <div class="buttons">
+                <button class="btn clear">C</button>
+                <button class="btn operator">÷</button>
+                <button class="btn operator">×</button>
+                <button class="btn operator">-</button>
+                
+                <button class="btn">7</button>
+                <button class="btn">8</button>
+                <button class="btn">9</button>
+                <button class="btn operator">+</button>
+                
+                <button class="btn">4</button>
+                <button class="btn">5</button>
+                <button class="btn">6</button>
+                <button class="btn operator">%</button>
+                
+                <button class="btn">1</button>
+                <button class="btn">2</button>
+                <button class="btn">3</button>
+                <button class="btn">.</button>
+                
+                <button class="btn zero">0</button>
+                <button class="btn equals">=</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="blueScreen"></div>
+    <div id="blackScreen"></div>
+    
+    <div id="errorMessage">
+        <div class="sad-face">:(</div>
+        <div class="error-title">Your PC ran into a problem and needs to restart.</div>
+        <div class="error-text">
+            We're just collecting some error info, and then we'll restart for you.
+        </div>
+        <div class="error-text">
+            <span id="percentage">0</span>% complete
+        </div>
+        <div class="error-code">
+            For more information about this issue and possible fixes, visit https://www.windows.com/stopcode<br><br>
+            If you call a support person, give them this info:<br>
+            Stop code: CRITICAL_PROCESS_DIED
+        </div>
+    </div>
+    
+    <div id="countdown"></div>
+    <div id="finalBlackScreen"></div>
+    
+    <script>
+        let clickCount = 0;
+        let sequenceLaunched = false;
+        let currentValue = '0';
+        const display = document.getElementById('display');
+        
+        // Fonction pour la calculatrice (juste pour le show)
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (sequenceLaunched) return;
+                
+                const value = this.textContent;
+                
+                if (value === 'C') {
+                    currentValue = '0';
+                } else if (value === '=') {
+                    // Ne rien faire, juste pour le show
+                } else {
+                    if (currentValue === '0') {
+                        currentValue = value;
+                    } else {
+                        currentValue += value;
+                    }
+                }
+                
+                display.textContent = currentValue;
+            });
+        });
+        
+        // Compteur de clics - le BSOD se déclenche au 3ème clic
+        document.addEventListener('click', function() {
+            if (sequenceLaunched) return;
+            
+            clickCount++;
+            console.log('Clic #' + clickCount); // Pour debug
+            
+            if (clickCount >= 3) {
+                sequenceLaunched = true;
+                
+                // Passer en plein écran d'abord
+                const elem = document.documentElement;
+            
+            const goFullscreen = () => {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+            };
+            
+            goFullscreen();
+            
+            // Attendre un instant avant de lancer le BSOD
+            setTimeout(function() {
+                // Étape 1 : Afficher l'écran bleu avec le message d'erreur et masquer le curseur
+                const blueScreen = document.getElementById('blueScreen');
+                const errorMessage = document.getElementById('errorMessage');
+                const content = document.getElementById('content');
+                
+                content.style.display = 'none';
+                blueScreen.style.display = 'block';
+                errorMessage.style.display = 'block';
+                document.body.classList.add('hide-cursor');
+                
+                // Animation du pourcentage
+                const percentage = document.getElementById('percentage');
+                let percent = 0;
+                const percentInterval = setInterval(function() {
+                    percent += Math.floor(Math.random() * 8) + 2;
+                    if (percent >= 100) {
+                        percent = 100;
+                        clearInterval(percentInterval);
+                    }
+                    percentage.textContent = percent;
+                }, 400);
+                
+                // Étape 2 : Après 8 secondes, afficher l'écran noir et le compte à rebours
+                setTimeout(function() {
+                    const blackScreen = document.getElementById('blackScreen');
+                    const countdown = document.getElementById('countdown');
+                    
+                    blueScreen.style.display = 'none';
+                    errorMessage.style.display = 'none';
+                    blackScreen.style.display = 'block';
+                    countdown.style.display = 'block';
+                    
+                    // Affichage style terminal
+                    const lines = [
+                        '[KERNEL] Critical system failure detected',
+                        '[SYSTEM] Initiating emergency shutdown protocol...',
+                        '[WARNING] All data will be lost',
+                        '',
+                        'AUTODESTRUCTION DANS: '
+                    ];
+                    
+                    let lineIndex = 0;
+                    const lineInterval = setInterval(function() {
+                        if (lineIndex < lines.length) {
+                            const line = document.createElement('div');
+                            line.className = 'terminal-line';
+                            line.textContent = lines[lineIndex];
+                            countdown.appendChild(line);
+                            lineIndex++;
+                        } else {
+                            clearInterval(lineInterval);
+                            
+                            // Compte à rebours
+                            const countDiv = document.createElement('div');
+                            countDiv.className = 'terminal-line';
+                            const countSpan = document.createElement('span');
+                            countSpan.className = 'countdown-number';
+                            countSpan.textContent = '5';
+                            countDiv.appendChild(countSpan);
+                            countdown.appendChild(countDiv);
+                            
+                            let count = 5;
+                            const countInterval = setInterval(function() {
+                                count--;
+                                if (count >= 0) {
+                                    countSpan.textContent = count;
+                                } else {
+                                    clearInterval(countInterval);
+                                    countSpan.textContent = '0';
+                                    
+                                    // Message final
+                                    setTimeout(function() {
+                                        const finalLine = document.createElement('div');
+                                        finalLine.className = 'terminal-line blink';
+                                        finalLine.style.color = '#ff0000';
+                                        finalLine.style.marginTop = '10px';
+                                        finalLine.textContent = '>>> SYSTEM DESTROYED <<<';
+                                        countdown.appendChild(finalLine);
+                                        
+                                        // Étape finale : Après 2 secondes, écran noir total
+                                        setTimeout(function() {
+                                            const finalBlackScreen = document.getElementById('finalBlackScreen');
+                                            finalBlackScreen.style.display = 'block';
+                                        }, 2000);
+                                    }, 1000);
+                                }
+                            }, 1000);
+                        }
+                    }, 600);
+                }, 8000);
+            }, 100);
+            } // Fermeture du if (clickCount >= 3)
+        });
+    </script>
+</body>
+</html>
